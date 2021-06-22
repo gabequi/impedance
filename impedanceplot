@@ -1,0 +1,100 @@
+import pandas as pd
+import math
+from math import log
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import matplotlib as mpl
+import numpy as np
+import mpld3
+from mpld3 import plugins, utils
+import os 
+from IPython.display import set_matplotlib_formats
+import tkinter as tk
+from tkinter import filedialog
+
+mpl.rcParams['figure.dpi']= 200
+set_matplotlib_formats('retina')
+
+root = tk.Tk()
+root.withdraw()
+
+file = filedialog.askopenfilename()
+
+currdir = os.path.dirname(os.path.realpath(file))
+
+a=len(currdir)+1
+b=len(file)-4
+name=file[a:b]
+
+f=open(file)
+
+dfx = pd.read_csv(file, header=(0), skiprows=(46),encoding= 'unicode_escape',
+                  sep='\t',engine='python')
+
+
+time=dfx.loc[1:,'Time'].astype(float)
+zreal=dfx.loc[1:,'Zreal'].astype(float)
+zimag=dfx.loc[1:,'Zimag'].astype(float)
+freq=dfx.loc[1:,'Freq'].astype(float)
+
+zimag=abs(zimag)
+
+df=pd.DataFrame()
+df['Zreal']=zreal
+df['-Zimag']=zimag
+df['Freq. [Hz]']=freq
+
+my_dpi=115
+
+plt.style.use('penguin')
+
+fig, ax = plt.subplots(figsize=(1150/my_dpi, 950/my_dpi), dpi=my_dpi)
+
+points=ax.plot(zreal,zimag,linestyle='none',marker='.',markersize=20,linewidth=1,
+         markeredgecolor='k', markeredgewidth=0.3)
+
+plt.suptitle("Nyquist plot for "+ name, fontsize=20, fontname="Dejavu Sans",fontweight="normal")
+ax.set_xlabel('Z$_{real}$ ($\u03A9$)', fontsize=20, fontname="Dejavu Sans",fontweight="normal")
+ax.set_ylabel('-Z$_{imag}$ ($\u03A9$)', fontsize=20, fontname="Dejavu Sans",fontweight="normal")
+
+m=np.max([np.max(zreal),np.max(zimag)])
+ax.grid(color='black', linestyle='--',linewidth=0.1,alpha=0.3)
+
+ax.set_xlim=([0,m])
+ax.set_ylim=([0,m])
+
+plt.savefig(r'C:\Users\GQU9657\Documents\data\impedance/'+name+'_Nyquist.png', dpi=my_dpi)
+
+# Define some CSS to control our custom labels
+css = """
+table
+{
+  border-collapse: collapse;
+}
+th
+{
+  color: #F3F6F6;
+  background-color: #000000;
+}
+td
+{
+  background-color: #cccccc;
+}
+table, th, td
+{
+  font-family:Arial, Helvetica, sans-serif;
+  border: 1px solid black;
+  text-align: right;
+}
+"""
+
+labels = []
+for i in range(len(df)):
+    label = df.iloc[[i], :].T
+    labels.append(str(label.to_html()))
+
+tooltip = plugins.PointHTMLTooltip(points[0], labels,
+                                   voffset=10, hoffset=10, css=css)
+plugins.connect(fig, tooltip)
+
+mpld3.show()
